@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">我爱猜谜语</string>
+    <string name="next_item">下一个</string>
+    <string name="answer_here">在这里输入答案。。。</string>
+    <string name="confirm">确定</string>
+    <string name="riddle_example">自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。</string>
+</resources>
