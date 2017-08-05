@@ -3,5 +3,6 @@
     <string name="next_item">下一个</string>
     <string name="answer_here">在这里输入答案。。。</string>
     <string name="confirm">确定</string>
-    <string name="riddle_example">自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。</string>
+    <string name="answer">答案</string>
+    <string name="collapse">收起</string>
 </resources>
