@@ -1,6 +1,8 @@
 package com.children.peter.riddle;
 
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -20,6 +22,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 import static android.R.attr.visible;
+import org.litepal.tablemanager.Connector;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -29,8 +32,9 @@ public class MainActivity extends AppCompatActivity {
     private int index = 0;
 
     public MainActivity() {
+
         Riddle riddle = new Riddle(
-                "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
+                "", "");
         riddles.add(riddle);
         riddle = new Riddle(
                 "壳儿硬，壳儿脆，四个姐妹隔床睡，从小到大背靠背，盖着一床疙瘩被。(打一植物)", "—— 谜底:核桃");
@@ -64,6 +68,16 @@ public class MainActivity extends AppCompatActivity {
 //        if(actionBar != null) {
 //            actionBar.hide();
 //        }
+
+//        SQLiteDatabase db = Connector.getDatabase();
+        SQLiteOpenHelper dbHelper = new RiddleSqLiteHelper(this, "riddles.db", null, 1);
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+
+//        db.execSQL("insert into riddles(1, 1, 1, "
+//                + "\"自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）\","
+//                + "\"—— 谜底:橘子\")");
+
+        db.close();
 
         RiddleAdapter adapter = new RiddleAdapter(
                 this, R.layout.riddle_item, riddles);
