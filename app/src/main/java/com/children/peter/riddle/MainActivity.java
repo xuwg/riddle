@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -22,6 +24,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 
 import static android.R.attr.visible;
+
 import org.litepal.tablemanager.Connector;
 
 
@@ -34,30 +37,13 @@ public class MainActivity extends AppCompatActivity {
     public MainActivity() {
 
         Riddle riddle = new Riddle(
-                "", "");
-        riddles.add(riddle);
-        riddle = new Riddle(
                 "壳儿硬，壳儿脆，四个姐妹隔床睡，从小到大背靠背，盖着一床疙瘩被。(打一植物)", "—— 谜底:核桃");
         riddles.add(riddle);
         riddle = new Riddle(
                 "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
-        riddles.add(riddle);
-        riddle = new Riddle(
-                "壳儿硬，壳儿脆，四个姐妹隔床睡，从小到大背靠背，盖着一床疙瘩被。(打一植物)", "—— 谜底:核桃");
-        riddles.add(riddle);
-        riddle = new Riddle(
-                "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
-        riddles.add(riddle);
-        riddle = new Riddle(
-                "壳儿硬，壳儿脆，四个姐妹隔床睡，从小到大背靠背，盖着一床疙瘩被。(打一植物)", "—— 谜底:核桃");
-        riddles.add(riddle);
-        riddle = new Riddle(
-                "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
-        riddles.add(riddle);
-        riddle = new Riddle(
-                "壳儿硬，壳儿脆，四个姐妹隔床睡，从小到大背靠背，盖着一床疙瘩被。(打一植物)", "—— 谜底:核桃");
         riddles.add(riddle);
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,16 +65,12 @@ public class MainActivity extends AppCompatActivity {
 
         db.close();
 
-        RiddleAdapter adapter = new RiddleAdapter(
-                this, R.layout.riddle_item, riddles);
-        ListView listView = (ListView) findViewById(R.id.riddle_list_view);
-        listView.setAdapter(adapter);
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-            }
-        });
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.riddle_recycler_view);
+        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(linearLayoutManager);
+        RiddleAdapter adapter = new RiddleAdapter(riddles);
+        recyclerView.setAdapter(adapter);
     }
 
     @Override
@@ -110,7 +92,6 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == RESULT_OK) {
                     Log.d("result return", data.getStringExtra("data_return"));
                 }
-
         }
 
         super.onActivityResult(requestCode, resultCode, data);

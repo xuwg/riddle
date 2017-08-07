@@ -5,6 +5,7 @@ import android.support.annotation.IdRes;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,39 +20,37 @@ import java.util.List;
  * Created by Administrator on 2017/8/4.
  */
 
-public class RiddleAdapter extends ArrayAdapter<Riddle> {
-    private int resourceId;
+public class RiddleAdapter extends RecyclerView.Adapter<RiddleAdapter.ViewHolder> {
 
-    public RiddleAdapter(@NonNull Context context,
-                         @IdRes int textViewResourceId, @NonNull List<Riddle> objects) {
-        super(context, textViewResourceId, objects);
-        resourceId = textViewResourceId;
-    }
+    List<Riddle> riddles;
 
-    @NonNull
-    @Override
-    public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+    static class ViewHolder extends RecyclerView.ViewHolder {
 
-        final View view;
-        Riddle riddle = getItem(position);
-        final ViewHolder viewHolder;
-
-        if (convertView == null) {
-            view = LayoutInflater.from(getContext()).inflate(resourceId, parent, false);
-            viewHolder = new ViewHolder();
-            viewHolder.riddleContent = (TextView) view.findViewById(R.id.riddle_content);
-            viewHolder.riddleKey = (TextView) view.findViewById(R.id.riddle_key);
-            viewHolder.answer = (TextView) view.findViewById(R.id.answer);
-            viewHolder.collapse = (TextView) view.findViewById(R.id.collapse);
-
-            view.setTag(viewHolder);
-        } else {
-            view = convertView;
-            viewHolder = (ViewHolder) view.getTag();
+        public ViewHolder(View itemView) {
+            super(itemView);
+            this.riddleContent = (TextView) itemView.findViewById(R.id.riddle_content);
+            this.riddleKey = (TextView) itemView.findViewById(R.id.riddle_key);
+            this.answer = (TextView) itemView.findViewById(R.id.answer);
+            this.collapse = (TextView) itemView.findViewById(R.id.collapse);
         }
 
-        viewHolder.riddleContent.setText(riddle.getContent());
-        viewHolder.riddleKey.setText(riddle.getKey());
+        TextView riddleContent;
+        TextView riddleKey;
+
+        TextView answer;
+        TextView collapse;
+    }
+
+    public RiddleAdapter(List<Riddle> objects) {
+
+        riddles = objects;
+    }
+
+    @Override
+    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.riddle_item, parent, false);
+        final ViewHolder viewHolder = new ViewHolder(view);
 
         viewHolder.answer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -67,14 +66,19 @@ public class RiddleAdapter extends ArrayAdapter<Riddle> {
                 viewHolder.collapse.setVisibility(View.GONE);
             }
         });
-        return view;
+
+        return viewHolder;
     }
 
-    class ViewHolder {
-        TextView riddleContent;
-        TextView riddleKey;
+    @Override
+    public void onBindViewHolder(ViewHolder holder, int position) {
+        Riddle riddle = riddles.get(position);
+        holder.riddleContent.setText(riddle.getContent());
+        holder.riddleKey.setText(riddle.getKey());
+    }
 
-        TextView answer;
-        TextView collapse;
+    @Override
+    public int getItemCount() {
+        return riddles.size();
     }
 }
