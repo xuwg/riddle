@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.riddle_recycler_view);
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
+//        linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         recyclerView.setLayoutManager(linearLayoutManager);
         RiddleAdapter adapter = new RiddleAdapter(riddles);
         recyclerView.setAdapter(adapter);

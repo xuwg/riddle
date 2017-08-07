@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical">
 
     <TextView
@@ -18,7 +18,8 @@
         android:autoLink="web"
         android:clickable="true"
         android:text="@string/answer"
-        android:textColor="@color/colorBlue" />
+        android:textColor="@color/colorBlue"
+        android:layout_margin="10dp"/>
 
     <TextView
         android:id="@+id/riddle_key"
@@ -36,5 +37,6 @@
         android:clickable="true"
         android:text="@string/collapse"
         android:textColor="@color/colorBlue"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:layout_margin="10dp"/>
 </LinearLayout>
