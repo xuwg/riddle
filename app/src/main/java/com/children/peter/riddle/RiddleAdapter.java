@@ -55,6 +55,7 @@ public class RiddleAdapter extends RecyclerView.Adapter<RiddleAdapter.ViewHolder
         viewHolder.answer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                viewHolder.answer.setVisibility(View.GONE);
                 viewHolder.riddleKey.setVisibility(View.VISIBLE);
                 viewHolder.collapse.setVisibility(View.VISIBLE);
             }
@@ -62,6 +63,7 @@ public class RiddleAdapter extends RecyclerView.Adapter<RiddleAdapter.ViewHolder
         viewHolder.collapse.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                viewHolder.answer.setVisibility(View.VISIBLE);
                 viewHolder.riddleKey.setVisibility(View.GONE);
                 viewHolder.collapse.setVisibility(View.GONE);
             }

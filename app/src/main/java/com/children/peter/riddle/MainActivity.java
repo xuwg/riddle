@@ -1,8 +1,15 @@
 package com.children.peter.riddle;
 
+import android.content.BroadcastReceiver;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -21,27 +28,23 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
+import java.util.*;
 
 import static android.R.attr.visible;
 
+import org.litepal.crud.DataSupport;
 import org.litepal.tablemanager.Connector;
 
 
 public class MainActivity extends AppCompatActivity {
 
-    private final float textIncrementSize = 0.1f;
-    private ArrayList<Riddle> riddles = new ArrayList<>();
-    private int index = 0;
+    private List<Riddle> riddles = new ArrayList<>();
+    private IntentFilter intentFilter;
+    NetworkChangeReceiver networkChangeReceiver;
+
+    private static final String TAG = "MainActivity";
 
     public MainActivity() {
-
-        Riddle riddle = new Riddle(
-                "壳儿硬，壳儿脆，四个姐妹隔床睡，从小到大背靠背，盖着一床疙瘩被。(打一植物)", "—— 谜底:核桃");
-        riddles.add(riddle);
-        riddle = new Riddle(
-                "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
-        riddles.add(riddle);
     }
 
     @Override
@@ -55,29 +58,40 @@ public class MainActivity extends AppCompatActivity {
 //            actionBar.hide();
 //        }
 
-//        SQLiteDatabase db = Connector.getDatabase();
-        SQLiteOpenHelper dbHelper = new RiddleSqLiteHelper(this, "riddles.db", null, 1);
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Riddle riddle = new Riddle(1, 1, "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
+        riddle.save();
 
-//        db.execSQL("insert into riddles(1, 1, 1, "
-//                + "\"自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）\","
-//                + "\"—— 谜底:橘子\")");
-
-        db.close();
+        riddles = DataSupport.findAll(Riddle.class);
+//        riddles = DataSupport.findAll(Riddle.class);
+//        Log.d(TAG, "onCreate: "+riddles.toString());
 
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.riddle_recycler_view);
+
         LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
 //        linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
         recyclerView.setLayoutManager(linearLayoutManager);
         RiddleAdapter adapter = new RiddleAdapter(riddles);
         recyclerView.setAdapter(adapter);
+
+        //network change broadcast
+        intentFilter = new IntentFilter();
+        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        networkChangeReceiver = new NetworkChangeReceiver();
+        registerReceiver(networkChangeReceiver, intentFilter);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        unregisterReceiver(networkChangeReceiver);
     }
 
     @Override
@@ -96,5 +110,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    class NetworkChangeReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+            if (networkInfo != null && networkInfo.isAvailable()) {
+                Toast.makeText(context, "network is available", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(context, "network is unavailable", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }

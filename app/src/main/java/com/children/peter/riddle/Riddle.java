@@ -1,10 +1,12 @@
 package com.children.peter.riddle;
 
+import org.litepal.crud.DataSupport;
+
 /**
  * Created by Administrator on 2017/8/4.
  */
 
-public class Riddle {
+public class Riddle extends DataSupport {
 
 
     private int id;
@@ -13,9 +15,11 @@ public class Riddle {
     private String content;
     private String key;
 
-    public Riddle(String content, String key) {
+    public Riddle(int type, int category, String content, String key) {
         this.content = content;
         this.key = key;
+        this.type = type;
+        this.category = category;
     }
 
     public String getKey() {

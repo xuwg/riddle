@@ -8,7 +8,11 @@
     <TextView
         android:id="@+id/riddle_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"/>
 
     <TextView
         android:id="@+id/answer"
@@ -17,15 +21,17 @@
         android:layout_gravity="left|center"
         android:autoLink="web"
         android:clickable="true"
+        android:paddingLeft="10dp"
         android:text="@string/answer"
-        android:textColor="@color/colorBlue"
-        android:layout_margin="10dp"/>
+        android:textColor="@color/colorBlue" />
 
     <TextView
         android:id="@+id/riddle_key"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:visibility="gone" />
+        android:visibility="gone"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"/>
 
     <TextView
         android:id="@+id/collapse"
