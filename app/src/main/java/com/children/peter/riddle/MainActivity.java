@@ -1,39 +1,39 @@
 package com.children.peter.riddle;
 
 import android.content.BroadcastReceiver;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.support.v7.app.ActionBar;
+import android.os.Build;
+import android.provider.MediaStore;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.ListView;
-import android.widget.TextView;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.*;
-
-import static android.R.attr.visible;
+import java.util.jar.Manifest;
 
 import org.litepal.crud.DataSupport;
-import org.litepal.tablemanager.Connector;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -41,7 +41,11 @@ public class MainActivity extends AppCompatActivity {
     private List<Riddle> riddles = new ArrayList<>();
     private IntentFilter intentFilter;
     NetworkChangeReceiver networkChangeReceiver;
+    private ImageView photo;
+    private Uri imageUri;
 
+    private static final int TAKE_PHOTO = 2;
+    private static final int CHOOSE_PHOTO = 3;
     private static final String TAG = "MainActivity";
 
     public MainActivity() {
@@ -57,6 +61,39 @@ public class MainActivity extends AppCompatActivity {
 //        if(actionBar != null) {
 //            actionBar.hide();
 //        }
+
+        photo = (ImageView) findViewById(R.id.photo);
+        photo.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+//                File outputImage = new File(getExternalCacheDir(), "photo.jpg");
+//                try {
+//                    if (outputImage.exists()) {
+//                        outputImage.delete();
+//                    }
+//                    outputImage.createNewFile();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//
+//                if (Build.VERSION.SDK_INT >= 24) {
+//                    imageUri = FileProvider.getUriForFile(MainActivity.this,
+//                            "com.children.peter.riddle.fileprovider", outputImage);
+//                } else {
+//                    imageUri = Uri.fromFile(outputImage);
+//                }
+//
+//                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+//                intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+//                startActivityForResult(intent, TAKE_PHOTO);
+                if(ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                } else {
+                    openAlbum();
+                }
+            }
+        });
 
         Riddle riddle = new Riddle(1, 1, "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
         riddle.save();
@@ -107,6 +144,17 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == RESULT_OK) {
                     Log.d("result return", data.getStringExtra("data_return"));
                 }
+                break;
+            case TAKE_PHOTO:
+                if(resultCode == RESULT_OK) {
+                    try {
+                        Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
+                        photo.setImageBitmap(bitmap);
+                    } catch (FileNotFoundException e) {
+
+                    }
+                }
+                break;
         }
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -123,5 +171,27 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(context, "network is unavailable", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    private void openAlbum() {
+        Intent intent = new Intent("android.intent.action.GET_CONTENT");
+        intent.setType("image/*");
+        startActivityForResult(intent, CHOOSE_PHOTO);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch(requestCode) {
+            case 1:
+                if(grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openAlbum();
+                } else {
+                    Toast.makeText(this, "You denied the permission", Toast.LENGTH_SHORT).show();
+                }xc
+                break;
+            default:
+                break;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 }
