@@ -10,12 +10,13 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.Build;
-import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -27,18 +28,17 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
-import java.io.File;
+import com.astuetz.PagerSlidingTabStrip;
+import com.children.peter.riddle.db.Riddle;
+import com.children.peter.riddle.db.RiddleAdapter;
+
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.*;
-import java.util.jar.Manifest;
 
 import org.litepal.crud.DataSupport;
 
-
 public class MainActivity extends AppCompatActivity {
 
-    private List<Riddle> riddles = new ArrayList<>();
     private IntentFilter intentFilter;
     NetworkChangeReceiver networkChangeReceiver;
     private ImageView photo;
@@ -55,12 +55,12 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Log.d("MainActivity", "onCreate execute");
 
-//        ActionBar actionBar =  getSupportActionBar();
-//        if(actionBar != null) {
-//            actionBar.hide();
-//        }
+        ViewPager pager = (ViewPager) findViewById(R.id.pager);
+        pager.setAdapter(new MyPagerAdapter(getSupportFragmentManager()));
+        PagerSlidingTabStrip tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
+        tabs.setViewPager(pager);
+
 
         photo = (ImageView) findViewById(R.id.photo);
         photo.setOnClickListener(new View.OnClickListener() {
@@ -86,9 +86,9 @@ public class MainActivity extends AppCompatActivity {
 //                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
 //                intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
 //                startActivityForResult(intent, TAKE_PHOTO);
-                if(ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                if (ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
                 } else {
                     openAlbum();
                 }
@@ -97,19 +97,6 @@ public class MainActivity extends AppCompatActivity {
 
         Riddle riddle = new Riddle(1, 1, "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
         riddle.save();
-
-        riddles = DataSupport.findAll(Riddle.class);
-//        riddles = DataSupport.findAll(Riddle.class);
-//        Log.d(TAG, "onCreate: "+riddles.toString());
-
-
-        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.riddle_recycler_view);
-
-        LinearLayoutManager linearLayoutManager = new LinearLayoutManager(this);
-//        linearLayoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
-        recyclerView.setLayoutManager(linearLayoutManager);
-        RiddleAdapter adapter = new RiddleAdapter(riddles);
-        recyclerView.setAdapter(adapter);
 
         //network change broadcast
         intentFilter = new IntentFilter();
@@ -146,7 +133,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case TAKE_PHOTO:
-                if(resultCode == RESULT_OK) {
+                if (resultCode == RESULT_OK) {
                     try {
                         Bitmap bitmap = BitmapFactory.decodeStream(getContentResolver().openInputStream(imageUri));
                         photo.setImageBitmap(bitmap);
@@ -158,6 +145,28 @@ public class MainActivity extends AppCompatActivity {
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void openAlbum() {
+        Intent intent = new Intent("android.intent.action.GET_CONTENT");
+        intent.setType("image/*");
+        startActivityForResult(intent, CHOOSE_PHOTO);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 1:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openAlbum();
+                } else {
+                    Toast.makeText(this, "You denied the permission", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+                break;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     class NetworkChangeReceiver extends BroadcastReceiver {
@@ -173,25 +182,36 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void openAlbum() {
-        Intent intent = new Intent("android.intent.action.GET_CONTENT");
-        intent.setType("image/*");
-        startActivityForResult(intent, CHOOSE_PHOTO);
-    }
+    public class MyPagerAdapter extends FragmentPagerAdapter {
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch(requestCode) {
-            case 1:
-                if(grantResults.length >0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    openAlbum();
-                } else {
-                    Toast.makeText(this, "You denied the permission", Toast.LENGTH_SHORT).show();
-                }xc
-                break;
-            default:
-                break;
+        public MyPagerAdapter(FragmentManager fm) {
+            super(fm);
         }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        private final String[] titles = {"聊天", "发现", "通讯录"};
+
+        @Override
+        public CharSequence getPageTitle(int position) {
+            return titles[position];
+        }
+
+        @Override
+        public int getCount() {
+            return titles.length;
+        }
+
+        @Override
+        public Fragment getItem(int position) {
+            switch (position) {
+                case 0:
+                    return new RiddlesFragment();
+                case 1:
+                    return new RiddlesFragment();
+                case 2:
+                    return new RiddlesFragment();
+                default:
+                    return null;
+            }
+        }
     }
 }

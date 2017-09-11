@@ -1,4 +1,4 @@
-package com.children.peter.riddle;
+package com.children.peter.riddle.db;
 
 import org.litepal.crud.DataSupport;
 

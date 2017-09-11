@@ -5,6 +5,6 @@
     <version value="1" ></version>
 
     <list>
-        <mapping class="com.children.peter.riddle.Riddle"></mapping>
+        <mapping class="com.children.peter.riddle.db.Riddle"></mapping>
     </list>
 </litepal>
