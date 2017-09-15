@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
@@ -18,31 +19,43 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.astuetz.PagerSlidingTabStrip;
 import com.children.peter.riddle.db.Riddle;
-import com.children.peter.riddle.db.RiddleAdapter;
+import com.children.peter.riddle.util.HttpUtil;
+
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.FileNotFoundException;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.litepal.crud.DataSupport;
+import okhttp3.Call;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
     private IntentFilter intentFilter;
     NetworkChangeReceiver networkChangeReceiver;
     private ImageView photo;
+    ProgressBar progressBar;
     private Uri imageUri;
+    private MyPagerAdapter myPagerAdsapter;
 
     private static final int TAKE_PHOTO = 2;
     private static final int CHOOSE_PHOTO = 3;
@@ -56,12 +69,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        ViewPager pager = (ViewPager) findViewById(R.id.pager);
-        pager.setAdapter(new MyPagerAdapter(getSupportFragmentManager()));
-        PagerSlidingTabStrip tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
-        tabs.setViewPager(pager);
-
-
+        myPagerAdsapter = new MyPagerAdapter(getSupportFragmentManager());
+        progressBar = (ProgressBar) findViewById(R.id.progress_bar);
         photo = (ImageView) findViewById(R.id.photo);
         photo.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -95,14 +104,64 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Riddle riddle = new Riddle(1, 1, "自家兄弟肩并肩，脱去黄袍味儿鲜；片片果肉色彩艳，冬天吃它来过年。（打一水果）", "—— 谜底:橘子");
-        riddle.save();
+        queryTitlesFromServer();
 
         //network change broadcast
         intentFilter = new IntentFilter();
         intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         networkChangeReceiver = new NetworkChangeReceiver();
         registerReceiver(networkChangeReceiver, intentFilter);
+    }
+
+    private void queryTitlesFromServer() {
+        final String address = "http://www.cmiyu.com";
+        progressBar.setVisibility(View.VISIBLE);
+
+        HttpUtil.sendOkHttpRequest(address, new okhttp3.Callback() {
+            @Override
+            public void onResponse(Call call, final Response response) throws IOException {
+
+                String html = new String(response.body().bytes(), "GBK");
+                Document doc = Jsoup.parse(html);
+                Elements elems = doc.getElementsByClass("miyuheader");
+                for (Element elem : elems) {
+                    Elements tabs = elem.getElementsByTag("a");
+                    HashMap<String, String> titles = new LinkedHashMap<String, String>();
+                    for (Element tab : tabs) {
+                        String tabText = tab.text();
+                        String linkHref = tab.attr("href");
+
+                        titles.put(tabText, address + linkHref);
+                    }
+                    myPagerAdsapter.setTitles(titles);
+                }
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ViewPager pager = (ViewPager) findViewById(R.id.pager);
+                        pager.setAdapter(myPagerAdsapter);
+                        PagerSlidingTabStrip tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
+                        tabs.setViewPager(pager);
+
+                        progressBar.setVisibility(View.GONE);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(MainActivity.this, "query titles failed", Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
     }
 
     @Override
@@ -175,43 +234,57 @@ public class MainActivity extends AppCompatActivity {
             ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
             if (networkInfo != null && networkInfo.isAvailable()) {
-                Toast.makeText(context, "network is available", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "network is available", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(context, "network is unavailable", Toast.LENGTH_SHORT).show();
+//                Toast.makeText(context, "network is unavailable", Toast.LENGTH_SHORT).show();
             }
         }
     }
 
     public class MyPagerAdapter extends FragmentPagerAdapter {
 
+        private Map<String, String> titles = new LinkedHashMap<String, String>();
+        private ArrayList<RiddlesFragment> views;
+        RiddlesFragment curFragment;
+
+
         public MyPagerAdapter(FragmentManager fm) {
             super(fm);
         }
 
-        private final String[] titles = {"聊天", "发现", "通讯录"};
+        public void setTitles(HashMap<String, String> map) {
+            titles = map;
+            if (views != null) {
+                views.clear();
+            } else {
+                views = new ArrayList<RiddlesFragment>();
+            }
+            for (int i = 0; i < map.size(); ++i) {
+                views.add(null);
+            }
+        }
 
         @Override
         public CharSequence getPageTitle(int position) {
-            return titles[position];
+            return (String) titles.keySet().toArray()[position];
         }
 
         @Override
         public int getCount() {
-            return titles.length;
+            return titles.size();
         }
 
         @Override
         public Fragment getItem(int position) {
-            switch (position) {
-                case 0:
-                    return new RiddlesFragment();
-                case 1:
-                    return new RiddlesFragment();
-                case 2:
-                    return new RiddlesFragment();
-                default:
-                    return null;
+
+            curFragment = views.get(position);
+            if (curFragment == null) {
+                String address = titles.get(titles.keySet().toArray()[position]);
+                curFragment = new RiddlesFragment(address);
+                views.set(position, curFragment);
             }
+
+            return curFragment;
         }
     }
 }

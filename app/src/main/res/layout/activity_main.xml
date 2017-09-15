@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context="com.children.peter.riddle.MainActivity">
 
-    <LinearLayout
+    <!--LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -27,7 +27,7 @@
                 app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
 
             </android.support.v7.widget.Toolbar>
-        </FrameLayout>
+        </FrameLayout-->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -35,7 +35,6 @@
             android:orientation="vertical"
             tools:layout_editor_absoluteX="8dp"
             tools:layout_editor_absoluteY="8dp">
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="80dp"
@@ -63,7 +62,11 @@
                     android:textSize="24sp" />
 
             </LinearLayout>
-
+            <ProgressBar
+                android:id="@+id/progress_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone"/>
             <com.astuetz.PagerSlidingTabStrip
                 android:id="@+id/tabs"
                 android:layout_width="match_parent"
@@ -74,20 +77,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@+id/tabs" />
-
-            <android.support.v7.widget.RecyclerView
-                android:id="@+id/riddle_recycler_view"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_marginLeft="8dp"
-                android:layout_marginRight="8dp"
-                android:layout_marginTop="8dp"
-                android:layout_weight="1"
-                android:visibility="invisible"></android.support.v7.widget.RecyclerView>
-
-
         </LinearLayout>
-    </LinearLayout>
+    <!--/LinearLayout-->
 
 
 </android.support.constraint.ConstraintLayout>

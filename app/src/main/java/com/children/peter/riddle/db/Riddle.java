@@ -7,8 +7,6 @@ import org.litepal.crud.DataSupport;
  */
 
 public class Riddle extends DataSupport {
-
-
     private int id;
     private int category;
     private int type;
