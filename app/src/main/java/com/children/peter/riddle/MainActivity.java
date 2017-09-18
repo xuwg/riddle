@@ -1,22 +1,29 @@
 package com.children.peter.riddle;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
+import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -36,6 +43,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private Uri imageUri;
     private MyPagerAdapter myPagerAdsapter;
 
+    private static final int REQUEST_WRITE_EXTERNAL_STORAGE = 1;
     private static final int TAKE_PHOTO = 2;
     private static final int CHOOSE_PHOTO = 3;
     private static final String TAG = "MainActivity";
@@ -73,34 +82,46 @@ public class MainActivity extends AppCompatActivity {
         progressBar = (ProgressBar) findViewById(R.id.progress_bar);
         photo = (ImageView) findViewById(R.id.photo);
         photo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-//                File outputImage = new File(getExternalCacheDir(), "photo.jpg");
-//                try {
-//                    if (outputImage.exists()) {
-//                        outputImage.delete();
-//                    }
-//                    outputImage.createNewFile();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//
-//                if (Build.VERSION.SDK_INT >= 24) {
-//                    imageUri = FileProvider.getUriForFile(MainActivity.this,
-//                            "com.children.peter.riddle.fileprovider", outputImage);
-//                } else {
-//                    imageUri = Uri.fromFile(outputImage);
-//                }
-//
-//                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
-//                intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
-//                startActivityForResult(intent, TAKE_PHOTO);
-                if (ContextCompat.checkSelfPermission(MainActivity.this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+
+            //使用摄像头拍照
+            void ImageCapture() {
+                File outputImage = new File(getExternalCacheDir(), "photo.jpg");
+                try {
+                    if (outputImage.exists()) {
+                        outputImage.delete();
+                    }
+                    outputImage.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                if (Build.VERSION.SDK_INT >= 24) {
+                    imageUri = FileProvider.getUriForFile(MainActivity.this,
+                            "com.children.peter.riddle.fileprovider", outputImage);
+                } else {
+                    imageUri = Uri.fromFile(outputImage);
+                }
+
+                Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+                startActivityForResult(intent, TAKE_PHOTO);
+            }
+
+            // 在相册选取
+            void TakePhoto() {
+                if (ContextCompat.checkSelfPermission(MainActivity.this,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                         != PackageManager.PERMISSION_GRANTED) {
-                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                    ActivityCompat.requestPermissions(MainActivity.this,
+                            new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_WRITE_EXTERNAL_STORAGE);
                 } else {
                     openAlbum();
                 }
+            }
+
+            @Override
+            public void onClick(View v) {
+                TakePhoto();
             }
         });
 
@@ -201,9 +222,42 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 break;
+            case CHOOSE_PHOTO:
+                if (resultCode == RESULT_OK) {
+                    if (Build.VERSION.SDK_INT >= 19) {
+                        //4.4及以上系统
+                        handleImageOnKitkat(data);
+                    } else {
+                        //4.4以下系统
+                        handleImageBeforeKitKat(data);
+                    }
+                }
+
+                break;
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void displayImage(String imagePath) {
+        if (imagePath != null) {
+            Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
+            photo.setImageBitmap(bitmap);
+        } else {
+            Toast.makeText(this, "failed to get image", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private String getImagePath(Uri uri, String selection) {
+        String path = null;
+        Cursor cursor = getContentResolver().query(uri, null, selection, null, null);
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                path = cursor.getString(cursor.getColumnIndex(MediaStore.Images.Media.DATA));
+            }
+            cursor.close();
+        }
+        return path;
     }
 
     private void openAlbum() {
@@ -212,10 +266,38 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, CHOOSE_PHOTO);
     }
 
+    @TargetApi(19)
+    private void handleImageOnKitkat(Intent data) {
+        String imagePath = null;
+        Uri uri = data.getData();
+        if (DocumentsContract.isDocumentUri(this, uri)) {
+            String docId = DocumentsContract.getDocumentId(uri);
+            if ("com.android.providers.media.documents".equals(uri.getAuthority())) {
+                String id = docId.split(":")[1];
+                String selection = MediaStore.Images.Media._ID + "=" + id;
+                imagePath = getImagePath(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, selection);
+            } else if ("com.android.providers.downloads.documents".equals(uri.getAuthority())) {
+                Uri contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), Long.valueOf(docId));
+                imagePath = getImagePath(contentUri, null);
+            }
+        } else if ("content".equalsIgnoreCase(uri.getScheme())) {
+            imagePath = getImagePath(uri, null);
+        } else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            imagePath = uri.getPath();
+        }
+        displayImage(imagePath);
+    }
+
+    private void handleImageBeforeKitKat(Intent data) {
+        Uri uri = data.getData();
+        String imagePath = getImagePath(uri, null);
+        displayImage(imagePath);
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
-            case 1:
+            case REQUEST_WRITE_EXTERNAL_STORAGE:
                 if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     openAlbum();
                 } else {
